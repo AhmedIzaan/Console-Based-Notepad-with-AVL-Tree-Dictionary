@@ -403,6 +403,32 @@ void spellCheckWord(AVLTree &dictionary, Queue &wordQueue)
 
     refresh();
 }
+void loadTextFromFile(LinkedList &text, const string &filename)
+{
+    ifstream file(filename);
+    if (file.is_open())
+    {
+        char ch;
+        while (file.get(ch))
+        {
+            text.append(ch);
+        }
+        file.close();
+    }
+}
+
+void saveTextToFile(const LinkedList &text, const string &filename)
+{
+    ofstream file(filename);
+    if (file.is_open())
+    {
+        for (listNode *temp = text.head; temp; temp = temp->next)
+        {
+            file.put(temp->data);
+        }
+        file.close();
+    }
+}
 
 int main()
 {
@@ -449,6 +475,38 @@ int main()
             text.append(' ');
             spellCheckWord(dictionary, wordQueue);
         }
+        else if (ch == 23) // Ctrl + S to save text
+        {
+            saveTextToFile(text, "save.txt");
+
+            
+            mvprintw(1, 0, "Text saved to save.txt.");
+            clrtoeol();
+            refresh();
+        }
+        else if (ch == 12) // Ctrl + L to load text
+        {
+            // Clear the current LinkedList
+            text = LinkedList(); // Reinitialize the list to clear existing data
+
+            loadTextFromFile(text, "save.txt");
+
+            // Clear and refresh the display area
+            for (int row = 2; row < LINES; ++row)
+            {
+                move(row, 0);
+                clrtoeol();
+            }
+
+            // Redisplay the loaded text
+            text.display(2);
+
+            // Provide feedback to the user
+            mvprintw(1, 0, "Text loaded from save.txt.");
+            clrtoeol();
+            refresh();
+        }
+
         else
         {
             text.append(ch);
