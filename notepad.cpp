@@ -63,7 +63,7 @@ public:
         while (temp)
         {
             mvaddch(row, col++, temp->data);
-            if (col >= COLS) // If reached end of the row, go to the next line
+            if (col >= COLS) 
             {
                 row++;
                 col = 0;
@@ -71,7 +71,7 @@ public:
             temp = temp->next;
         }
 
-        refresh(); // Refresh the screen to display the updates
+        refresh(); 
     }
 
     ~LinkedList()
@@ -475,7 +475,7 @@ int main()
             text.append(' ');
             spellCheckWord(dictionary, wordQueue);
         }
-        else if (ch == 23) // Ctrl + S to save text
+        else if (ch == 23) 
         {
             saveTextToFile(text, "save.txt");
 
@@ -484,24 +484,23 @@ int main()
             clrtoeol();
             refresh();
         }
-        else if (ch == 12) // Ctrl + L to load text
+        else if (ch == 12) 
         {
-            // Clear the current LinkedList
-            text = LinkedList(); // Reinitialize the list to clear existing data
+          
+            text = LinkedList(); 
 
             loadTextFromFile(text, "save.txt");
 
-            // Clear and refresh the display area
+            
             for (int row = 2; row < LINES; ++row)
             {
                 move(row, 0);
                 clrtoeol();
             }
 
-            // Redisplay the loaded text
+           
             text.display(2);
 
-            // Provide feedback to the user
             mvprintw(1, 0, "Text loaded from save.txt.");
             clrtoeol();
             refresh();
