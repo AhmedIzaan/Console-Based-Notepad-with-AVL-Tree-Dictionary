@@ -272,31 +272,10 @@ void loadDictionary(AVLTree &dictionary, const string &filename)
         dictionary.insertValue(word);
 }
 
-void loadTextFromFile(LinkedList &text, const string &filename)
-{
-    ifstream file(filename);
-    char ch;
-    while (file.get(ch))
-        text.append(ch);
-}
-
-void saveTextToFile(const LinkedList &text, const string &filename)
-{
-    ofstream file(filename);
-    for (listNode *temp = text.head; temp; temp = temp->next)
-        file.put(temp->data);
-}
-void suggestCorrections(AVLTree &dictionary, const string &word)
+string substituteLetters(AVLTree &dictionary, const string &word)
 {
     string modifiedWord;
-    bool suggestionFound = false;
-    int suggestionRow = 2;
-    string suggestions[100];
-    int suggestionCount = 0;
-    int maxSuggestions = 5;
-
-    // Technique 1: Substitute each character with every other character from 'a' to 'z'
-    for (size_t i = 0; i < word.length() && suggestionCount < maxSuggestions; ++i)
+    for (size_t i = 0; i < word.length(); ++i)
     {
         modifiedWord = word;
         for (char ch = 'a'; ch <= 'z'; ++ch)
@@ -306,110 +285,98 @@ void suggestCorrections(AVLTree &dictionary, const string &word)
                 modifiedWord[i] = ch;
                 if (dictionary.search(modifiedWord))
                 {
-                    bool isDuplicate = false;
-                    for (int j = 0; j < suggestionCount; ++j)
-                    {
-                        if (suggestions[j] == modifiedWord)
-                        {
-                            isDuplicate = true;
-                            break;
-                        }
-                    }
-                    if (!isDuplicate && suggestionCount < maxSuggestions)
-                    {
-                        suggestions[suggestionCount++] = modifiedWord;
-                        suggestionFound = true;
-                    }
+                    return modifiedWord;
                 }
             }
         }
     }
+    return "";
+}
 
-    // Technique 2: Omit each character one by one
-    for (size_t i = 0; i < word.length() && suggestionCount < maxSuggestions; ++i)
+string omitLetters(AVLTree &dictionary, const string &word)
+{
+    string modifiedWord;
+    for (size_t i = 0; i < word.length(); ++i)
     {
         modifiedWord = word.substr(0, i) + word.substr(i + 1);
         if (dictionary.search(modifiedWord))
         {
-            bool isDuplicate = false;
-            for (int j = 0; j < suggestionCount; ++j)
-            {
-                if (suggestions[j] == modifiedWord)
-                {
-                    isDuplicate = true;
-                    break;
-                }
-            }
-            if (!isDuplicate && suggestionCount < maxSuggestions)
-            {
-                suggestions[suggestionCount++] = modifiedWord;
-                suggestionFound = true;
-            }
+            return modifiedWord;
         }
     }
+    return "";
+}
 
-    // Technique 3: Insert each character from 'a' to 'z' at every position in the word
-    for (size_t i = 0; i <= word.length() && suggestionCount < maxSuggestions; ++i)
+string insertLetters(AVLTree &dictionary, const string &word)
+{
+    string modifiedWord;
+    for (size_t i = 0; i <= word.length(); ++i)
     {
         for (char ch = 'a'; ch <= 'z'; ++ch)
         {
             modifiedWord = word.substr(0, i) + ch + word.substr(i);
             if (dictionary.search(modifiedWord))
             {
-                bool isDuplicate = false;
-                for (int j = 0; j < suggestionCount; ++j)
-                {
-                    if (suggestions[j] == modifiedWord)
-                    {
-                        isDuplicate = true;
-                        break;
-                    }
-                }
-                if (!isDuplicate && suggestionCount < maxSuggestions)
-                {
-                    suggestions[suggestionCount++] = modifiedWord;
-                    suggestionFound = true;
-                }
+                return modifiedWord;
             }
         }
     }
-    // Technique 4: Swap every two adjacent characters
-    for (size_t i = 0; i < word.length() - 1 && suggestionCount < maxSuggestions; ++i)
+    return "";
+}
+
+string reverseLetters(AVLTree &dictionary, const string &word)
+{
+    string modifiedWord;
+    for (size_t i = 0; i < word.length() - 1; ++i)
     {
         modifiedWord = word;
         swap(modifiedWord[i], modifiedWord[i + 1]);
         if (dictionary.search(modifiedWord))
         {
-            bool isDuplicate = false;
-            for (int j = 0; j < suggestionCount; ++j)
-            {
-                if (suggestions[j] == modifiedWord)
-                {
-                    isDuplicate = true;
-                    break;
-                }
-            }
-            if (!isDuplicate && suggestionCount < maxSuggestions)
-            {
-                suggestions[suggestionCount++] = modifiedWord;
-                suggestionFound = true;
-            }
+            return modifiedWord;
         }
     }
+    return "";
+}
 
-    clear();
+void suggestCorrections(AVLTree &dictionary, const string &word)
+{
+    string suggestion;
+    int suggestionRow = 3;
 
-    // Display suggestions
-    for (int i = 0; i < suggestionCount; ++i)
+    for (int row = suggestionRow; row < LINES; ++row)
     {
-        mvprintw(suggestionRow + 2, 0, "Did you mean: %s?", suggestions[i].c_str());
+        move(row, 0);
+        clrtoeol();
     }
 
-    if (!suggestionFound)
+    suggestion = substituteLetters(dictionary, word);
+    if (!suggestion.empty())
     {
-        move(suggestionRow, 0);
-        clrtoeol();
-        mvprintw(suggestionRow, 0, "No suggestions found.");
+        mvprintw(suggestionRow++, 0, "Did you mean (substitution): %s?", suggestion.c_str());
+    }
+
+    suggestion = omitLetters(dictionary, word);
+    if (!suggestion.empty())
+    {
+        mvprintw(suggestionRow++, 0, "Did you mean (omission): %s?", suggestion.c_str());
+    }
+
+    suggestion = insertLetters(dictionary, word);
+    if (!suggestion.empty())
+    {
+        mvprintw(suggestionRow++, 0, "Did you mean (insertion): %s?", suggestion.c_str());
+    }
+
+    suggestion = reverseLetters(dictionary, word);
+    if (!suggestion.empty())
+    {
+        mvprintw(suggestionRow++, 0, "Did you mean (reversal): %s?", suggestion.c_str());
+    }
+
+    if (suggestionRow == 3)
+    {
+        mvprintw(suggestionRow++, 0, "No suggestions found.");
     }
 
     refresh();
@@ -430,7 +397,7 @@ void spellCheckWord(AVLTree &dictionary, Queue &wordQueue)
 
     else
     {
-        mvprintw(1, 0, "Misspelled: %s", word.c_str());
+
         suggestCorrections(dictionary, word);
     }
 
@@ -460,17 +427,27 @@ int main()
             break;
         else if (ch == 7)
         {
+
             text.deleteAtEnd();
+
             if (!wordQueue.isEmpty())
                 wordQueue.deleteAtEnd();
+
+            for (int row = 2; row < LINES; ++row)
+            {
+                move(row, 0);
+                clrtoeol();
+            }
+
+            text.display(2);
+            refresh();
         }
+
         else if (ch == ' ')
         {
             refresh();
-            // printw("Space or Enter pressed, calling spellCheckWord");
             text.append(' ');
             spellCheckWord(dictionary, wordQueue);
-            // suggestCorrections(dictionary, wordQueue.dequeueAll()); // Call to suggest corrections usleep(500000);
         }
         else
         {
